@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIT BHU Shortest Path Finder</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: rgba(0, 0, 0, 0.866);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        #mapCanvas {
+            border: 2px solid #2c3e50;
+            border-radius: 8px;
+            margin: 20px auto;
+            display: block;
+            cursor: pointer;
+            background-color: #f0f0f0;
+        }
+
+        #userInput {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .select-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 1.1em;
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 1em;
+            border: 2px solid #2c3e50;
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            width: 200px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        button#findPathButton {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button#findPathButton:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        button#findPathButton:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .select-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            select {
+                width: 100%;
+                max-width: 250px;
+            }
+
+            button#findPathButton {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IIT BHU Shortest Path Finder</h1>
+        <canvas id="mapCanvas" width="800" height="600"></canvas>
+        <div id="userInput">
+            <div class="select-container">
+                <label for="startNodeSelect">Start Location:</label>
+                <select id="startNodeSelect"></select>
+            </div>
+            <div class="select-container">
+                <label for="endNodeSelect">End Location:</label>
+                <select id="endNodeSelect"></select>
+            </div>
+            <button id="findPathButton">Find Shortest Path</button>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const canvas = document.getElementById('mapCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Predefined nodes
+            const nodes = [
+                { name: "Hyderabad Gate", x:303, y:575.724999, connections: [], id:1},
+                { name: "DG Corner", x:304, y:420.72499, connections: [], id:2},
+                { name: "IIT BHU Gate", x:302, y:315.724, connections: [], id:3},
+                { name: "Swimming Pool", x:158, y:487.724, connections: [], id:4},
+                { name: "1", x:183, y:314.724, connections: [], id:5},
+                { name: "Vishwanath Temple", x:183, y:341.724, connections: [], id:6},
+                { name: "ABLT", x:314, y:361.724, connections: [], id:7},
+                { name: "2", x:302, y:262.72499, connections: [], id:8},
+                { name: "Shatabdi Bhawan", x:260, y:261.724999, connections: [], id:9},
+                { name: "Dhanrajgiri", x:259, y:428.724, connections: [], id:10},
+                { name: "Morvi", x:201, y:428.72499, connections: [], id:11},
+                { name: "DR CV Raman Hostel", x:136, y:429.72499, connections: [], id:12},
+                { name: "3", x:295, y:460.72499, connections: [], id:13},
+                { name: "Satish Dhawan", x:243, y:462.72499, connections: [], id:14},
+                { name: "PC Ray ", x:194, y:463.72499, connections: [], id:15},
+                { name: "4", x:296, y:495.72499, connections: [], id:16},
+                { name: "Aryabhatta Hostel", x:222, y:499.72499, connections: [], id:17},
+                { name: "Ramanujan", x:294, y:478.724999, connections: [], id:18},
+                { name: "SN Bose", x:295, y:515.724999, connections: [], id:19},
+                { name: "Vishweshvarya", x:317, y:514.72499, connections: [], id:20},
+                { name: "Rajputana", x:348, y:430.724999, connections: [], id:21},
+                { name: "Limbdi Hostel", x:421, y:430.72499, connections: [], id:22},
+                { name: "Limbdi Corner", x:463, y:421.72499, connections: [], id:23},
+                { name: "SAC", x:346, y:414.724999, connections: [], id:24},
+                { name: "5", x:305, y:549.72499, connections: [], id:25},
+                { name: "Nivedita", x:391, y:534.72499, connections: [], id:26},
+                { name: "GSC Old", x:438, y:534.72499, connections: [], id:27},
+                { name: "6", x:466, y:541.72499, connections: [], id:28},
+                { name: "GSMC", x:454, y:483.72499, connections: [], id:29},
+                { name: "Guest House", x:477, y:496.72499, connections: [], id:30},
+                { name: "SC Dey Hostel", x:497, y:430.72499, connections: [], id:31},
+                { name: "Vivekanand", x:583, y:430.72499, connections: [], id:32},
+                { name: "7", x:620, y:425.72499, connections: [], id:33},
+                { name: "Faculty Apartment", x:610, y:469.72499, connections: [], id:34},
+                { name: "Vishwakarma", x:610, y:502.72499, connections: [], id:35},
+                { name: "8", x:619, y:541.72499, connections: [], id:36},
+                { name: "9", x:463, y:318.72499, connections: [], id:37},
+                { name: "Rajputana Ground", x:450, y:390.72499, connections: [], id:38},
+                { name: "Gymkhana Ground", x:475, y:381.72499, connections: [], id:39},
+                { name: "10", x:617, y:316.72499, connections: [], id:40},
+                { name: "11", x:619, y:156.724999, connections: [], id:41},
+                { name: "12", x:303, y:157.724999, connections: [], id:42},
+                { name: "Health Centre", x:65, y:413.72499, connections: [], id:43},
+                { name: "13", x:42, y:313.72499, connections: [], id:44},
+                { name: "Mining Dept", x:56, y:272.72499, connections: [], id:45},
+                { name: "Metallurgy Dept", x:55, y:201.72499, connections: [], id:46},
+                { name: "14", x:41, y:149.72499, connections: [], id:47},
+                { name: "Central Lib", x:188, y:159.72499, connections: [], id:48},
+                { name: "CSE Dept", x:386, y:142.72499, connections: [], id:50},
+                { name: "MNC Dept", x:536, y:146.72499, connections: [], id:51},
+                { name: "Swatantrata Bhawan", x:651, y:144.72499, connections: [], id:52},
+                { name: "Biomedical Dept", x:607, y:43.925, connections: [], id:53},
+                { name: "15", x:626, y:234.92500, connections: [], id:54},
+                { name: "Incubation Centre", x:649, y:227.92500, connections: [], id:55},
+                { name: "Proctor Office", x:646, y:240.92500, connections: [], id:56},
+                { name: "Ceramic Dept", x:674, y:240.92500, connections: [], id:57},
+                { name: "Phys Dept", x:702, y:240.92500, connections: [], id:58},
+                { name: "Chemical Dept", x:680, y:226.92500, connections: [], id:59},
+                { name: "Biochemical Dept", x:754, y:228.92500, connections: [], id:60},
+                { name: "Pharmaceutical Dept", x:741, y:240.92500, connections: [], id:61},
+                { name: "SMST", x:629, y:292.92500, connections: [], id:62},
+                { name: "LT3", x:706, y:306.92500, connections: [], id:63},
+                { name: "ADV", x:631, y:349.92500, connections: [], id:64},
+                { name: "16", x:390, y:305.125, connections: [], id:65},
+                { name: "17", x:548, y:305.125, connections: [], id:66},
+                { name: "Director Office", x:364, y:324.125, connections: [], id:67},
+                { name: "Library", x:406, y:324.125, connections: [], id:68},
+                { name: "Electronics Dept", x:385, y:268.125, connections: [], id:69},
+                { name: "18", x:394, y:284.125, connections: [], id:70},
+                { name: "Main Workshop", x:421, y:279.125, connections: [], id:71},
+                { name: "Humanity Dept", x:474, y:279.125, connections: [], id:72},
+                { name: "Manufacturing workshop", x:526, y:280.125, connections: [], id:73},
+                { name: "IWD", x:564, y:290.125, connections: [], id:74},
+                { name: "19", x:561, y:278.125, connections: [], id:75},
+                { name: "Chemistry Dept", x:560, y:245.125, connections: [], id:76},
+                { name: "Cafeteria", x:585, y:264.125, connections: [], id:77},
+                { name: "20", x:607, y:258.125, connections: [], id:78},
+                { name: "21", x:398, y:246.125, connections: [], id:79},
+                { name: "22", x:443, y:246.125, connections: [], id:80},
+                { name: "Sakha Office", x:435, y:225.125, connections: [], id:81},
+                { name: "Mech Dept", x:448, y:221.125, connections: [], id:82},
+                { name: "Architect Dept", x:497, y:228.125, connections: [], id:83},
+                { name: "Civil Dept", x:353, y:190.52500, connections: [], id:84},
+                { name: "EEE Dept", x:495, y:188.52500, connections: [], id:85},
+                { name: "23", x:607, y:179.52500, connections: [], id:86},
+            ];
+
+           
+            let connections = [];
+
+           
+            const excludedNodeNames = [
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                "20", "21", "22", "23"
+            ];
+
+            
+            const savedConnections = localStorage.getItem('iitbhu_connections');
+            if (savedConnections) {
+                const parsedConnections = JSON.parse(savedConnections);
+                connections = parsedConnections.map(([id1, id2]) => [
+                    nodes.find(n => n.id === id1),
+                    nodes.find(n => n.id === id2)
+                ]).filter(pair => pair[0] && pair[1]);
+                connections.forEach(([node1, node2]) => {
+                    if (!node1.connections.includes(node2)) node1.connections.push(node2);
+                    if (!node2.connections.includes(node1)) node2.connections.push(node1);
+                });
+            } else {
+                alert('No saved connections found in localStorage. Please define connections first.');
+            }
+
+            const mapImage = new Image();
+            mapImage.src = 'map.png';
+            mapImage.onload = function() {
+                redrawCanvas();
+            };
+
+            function drawNode(x, y, name) {
+            }
+
+            function drawLine(x1, y1, x2, y2, color = 'blue', width = 2) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.stroke();
+            }
+
+            function redrawCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+    
+            }
+
+            function updateDropdowns() {
+                const startNodeSelect = document.getElementById('startNodeSelect');
+                const endNodeSelect = document.getElementById('endNodeSelect');
+                startNodeSelect.innerHTML = '';
+                endNodeSelect.innerHTML = '';
+                nodes
+                    .filter(node => !excludedNodeNames.includes(node.name)) 
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .forEach(node => {
+                        const option = document.createElement('option');
+                        option.value = node.name;
+                        option.textContent = node.name;
+                        startNodeSelect.appendChild(option);
+                        endNodeSelect.appendChild(option.cloneNode(true));
+                    });
+            }
+
+            function dijkstra(nodes, startNode, endNode) {
+                const distances = {};
+                const previous = {};
+                const queue = [];
+                nodes.forEach(node => {
+                    distances[node.id] = Infinity;
+                    previous[node.id] = null;
+                    queue.push(node);
+                });
+                distances[startNode.id] = 0;
+
+                while (queue.length > 0) {
+                    queue.sort((a, b) => distances[a.id] - distances[b.id]);
+                    const currentNode = queue.shift();
+                    if (currentNode === endNode) {
+                        const path = [];
+                        let current = endNode;
+                        while (current) {
+                            path.unshift(current);
+                            current = previous[current.id];
+                        }
+                        return path;
+                    }
+                    currentNode.connections.forEach(neighbor => {
+                        const distance = Math.sqrt(
+                            Math.pow(currentNode.x - neighbor.x, 2) +
+                            Math.pow(currentNode.y - neighbor.y, 2)
+                        );
+                        const alt = distances[currentNode.id] + distance;
+                        if (alt < distances[neighbor.id]) {
+                            distances[neighbor.id] = alt;
+                            previous[neighbor.id] = currentNode;
+                        }
+                    });
+                }
+                return null;
+            }
+
+            function highlightPath(path) {
+                redrawCanvas();
+                for (let i = 0; i < path.length - 1; i++) {
+                    const node1 = path[i];
+                    const node2 = path[i + 1];
+                    drawLine(node1.x, node1.y, node2.x, node2.y, 'red', 4);
+                }
+            }
+
+            document.getElementById('findPathButton').addEventListener('click', function() {
+                const startNodeName = document.getElementById('startNodeSelect').value;
+                const endNodeName = document.getElementById('endNodeSelect').value;
+                const startNode = nodes.find(node => node.name === startNodeName);
+                const endNode = nodes.find(node => node.name === endNodeName);
+
+                if (!startNode || !endNode) {
+                    alert("Invalid location names! Please check your input.");
+                    return;
+                }
+
+                const shortestPath = dijkstra(nodes, startNode, endNode);
+                if (shortestPath) {
+                    highlightPath(shortestPath);
+                    alert(`Shortest path from ${startNode.name} to ${endNode.name} found!`);
+                } else {
+                    alert("No path found between these locations!");
+                }
+            });
+
+            updateDropdowns();
+            redrawCanvas();
+        });
+    </script>
+</body>
+</html>
